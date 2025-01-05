@@ -12,9 +12,15 @@ import { StartNowButton } from './start-now-button'
 import { X, Minus, Maximize2 } from 'lucide-react'
 
 export function ContactWizard() {
+  const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [isMaximized, setIsMaximized] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  })
   const [wasMaximized, setWasMaximized] = useState(false);
   const [position, setPosition] = useState(() => ({
     x: typeof window !== 'undefined' ? (window.innerWidth - 800) / 2 : 0,
@@ -56,9 +62,9 @@ export function ContactWizard() {
   }
 
   const handleRadioChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'intent') {
-      setWizardTitle(value === 'learn' ? "Let's Start Your Learning Journey" : "Let's Work on Your Project")
+      setWizardTitle(value === 'learn' ? "Let's Start Your Learning Journey" : "Let's Work on Your Project");
       if (value === 'learn') {
         setProgressSteps([
           'Choose Intent',
@@ -78,8 +84,12 @@ export function ContactWizard() {
           'Project Details'
         ]);
       }
+      // Avanzar automáticamente al siguiente paso en dispositivos móviles
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        nextStep();
+      }
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
@@ -190,6 +200,14 @@ export function ContactWizard() {
     }
   }, [handleMouseMove, handleMouseUp])
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return null
+  }
+
   return (
     <>
       {!isOpen && !isMinimized && (
@@ -220,15 +238,15 @@ export function ContactWizard() {
             ref={dialogRef}
             style={{
               position: 'fixed',
-              top: isMaximized ? 0 : `${position.y}px`,
-              left: isMaximized ? 0 : `${position.x}px`,
-              width: isMaximized ? '100%' : 'auto',
-              height: isMaximized ? '100%' : 'auto',
+              top: isMaximized || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : `${position.y}px`,
+              left: isMaximized || (typeof window !== 'undefined' && window.innerWidth < 768) ? 0 : `${position.x}px`,
+              width: isMaximized || (typeof window !== 'undefined' && window.innerWidth < 768) ? '100%' : 'auto',
+              height: isMaximized || (typeof window !== 'undefined' && window.innerWidth < 768) ? '100%' : 'auto',
               minHeight: '400px',
               transition: isDragging ? 'none' : 'all 0.3s ease-in-out',
             }}
             className={`bg-background border-2 border-foreground rounded-lg ${
-              isMaximized ? 'fixed inset-0 flex flex-col' : 'w-[800px] h-[500px]'
+              isMaximized || (typeof window !== 'undefined' && window.innerWidth < 768) ? 'fixed inset-0 flex flex-col' : 'w-[800px] h-[500px]'
             }`}
           >
             <div
@@ -243,7 +261,7 @@ export function ContactWizard() {
                   size="icon"
                   className="rounded-full hover:bg-muted w-6 h-6 p-0"
                 >
-                  <Minus className="h-3 w-3" />
+                  {mounted && <Minus className="h-3 w-3" />}
                   <span className="sr-only">Minimize</span>
                 </Button>
                 <Button
@@ -252,7 +270,7 @@ export function ContactWizard() {
                   size="icon"
                   className="rounded-full hover:bg-muted w-6 h-6 p-0"
                 >
-                  <Maximize2 className="h-3 w-3" />
+                  {mounted && <Maximize2 className="h-3 w-3" />}
                   <span className="sr-only">Maximize</span>
                 </Button>
                 <Button
@@ -261,7 +279,7 @@ export function ContactWizard() {
                   size="icon"
                   className="rounded-full hover:bg-destructive hover:text-destructive-foreground w-6 h-6 p-0"
                 >
-                  <X className="h-3 w-3" />
+                  {mounted && <X className="h-3 w-3" />}
                   <span className="sr-only">Close</span>
                 </Button>
               </div>
@@ -295,7 +313,9 @@ export function ContactWizard() {
                             <Label htmlFor="learn">I want to learn web development</Label>
                           </div>
                         </RadioGroup>
-                        <Button type="button" onClick={nextStep} disabled={!formData.intent}>Next</Button>
+                        {typeof window !== 'undefined' && window.innerWidth >= 768 && (
+                          <Button type="button" onClick={nextStep} disabled={!formData.intent}>Next</Button>
+                        )}
                       </div>
                     )}
 
