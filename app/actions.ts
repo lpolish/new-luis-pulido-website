@@ -1,7 +1,6 @@
 'use server'
 
 import { Resend } from 'resend'
-import { kv } from '@vercel/kv'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -170,37 +169,6 @@ export async function sendContactMessage(formData: FormData) {
   } catch (error) {
     console.error('Contact form error:', error)
     return { error: 'Failed to send message. Please try again.' }
-  }
-}
-
-export async function savePartialInfo(formData: any) {
-  const sessionId = Math.random().toString(36).substring(2, 15)
-  await kv.set(`partial_submission:${sessionId}`, JSON.stringify(formData), { ex: 60 * 60 * 24 }) // Expire after 24 hours
-
-  try {
-    // Send notification to admin about partial submission
-    await resend.emails.send({
-      from: 'Contact Form <contact@luispulido.com>',
-      to: [ADMIN_EMAIL],
-      subject: '⏳ New Partial Contact Form Submission',
-      html: `
-        <h1>New Partial Contact Form Submission</h1>
-        <p><strong>Status:</strong> Partial (In Progress)</p>
-        <p><strong>Session ID:</strong> ${sessionId}</p>
-        <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-        
-        <h2>Current Form Data:</h2>
-        <pre style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
-${JSON.stringify(formData, null, 2)}
-        </pre>
-        
-        <hr>
-        <p><em>This is a partial submission. User has not completed the wizard process yet.</em></p>
-        <p><em>Data will expire in 24 hours if not completed.</em></p>
-      `
-    })
-  } catch (error) {
-    console.error('Error sending partial submission email:', error)
   }
 }
 
